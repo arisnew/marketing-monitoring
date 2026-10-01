@@ -73,3 +73,17 @@ class MetricDailyOut(BaseModel):
     stats: dict
 
     model_config = {"from_attributes": True}
+
+
+class ComplianceRow(BaseModel):
+    rule_id: str
+    rule_name: str
+    monitor_type: str
+    platform_slug: str
+    current_status: str
+    window_days: int
+    runs_total: int
+    runs_ok: int
+    compliance_pct: float | None
+    target_met: bool | None
+    target_detail: str | None

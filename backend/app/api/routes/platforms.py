@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import RequireAdmin, RequireViewer
@@ -18,6 +18,7 @@ from app.schemas.platform import (
     PlatformUpdate,
 )
 from app.services.platform_fetch import fetch_platform
+from app.services.rule_admin import delete_platform
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])
 
@@ -111,3 +112,10 @@ def test_platform(
             )
 
     return asyncio.run(_run())
+
+
+@router.delete("/{platform_id}", status_code=204, response_class=Response)
+def remove_platform(platform_id: str, db: Session = Depends(get_db), _: User = RequireAdmin) -> Response:
+    if not delete_platform(db, platform_id):
+        raise HTTPException(status_code=404, detail="Platform not found")
+    return Response(status_code=204)

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     default_notify_webhook_url: str | None = None
     meta_app_id: str | None = None
     meta_app_secret: str | None = None
+    check_run_retention_days: int = 90
 
 
 @lru_cache

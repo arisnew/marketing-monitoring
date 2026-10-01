@@ -14,8 +14,11 @@ async function submit() {
   error.value = ''
   loading.value = true
   try {
-    const { access_token } = await api.login(email.value, password.value)
-    setToken(access_token)
+    const data = await api.login(email.value, password.value)
+    if (!data?.access_token) {
+      throw new Error('Server tidak mengembalikan token — pastikan API berjalan.')
+    }
+    setToken(data.access_token)
     emit('authenticated')
     router.push('/')
   } catch (e) {

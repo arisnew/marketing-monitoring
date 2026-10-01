@@ -10,6 +10,7 @@ from app.db.session import SessionLocal
 from app.models.monitor import MonitorRule, RuleStatus
 from app.services.aggregator import aggregate_yesterday
 from app.services.check_runner import run_rule_check
+from app.services.retention import prune_check_runs, vacuum_sqlite
 from app.services.token_refresh import refresh_due_platform_tokens
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,26 @@ def start_scheduler() -> BackgroundScheduler | None:
         hour=2,
         minute=0,
         id="token_refresh",
+        replace_existing=True,
+    )
+
+    def _retention() -> None:
+        db = SessionLocal()
+        try:
+            prune_check_runs(db)
+            vacuum_sqlite(db)
+        except Exception:
+            logger.exception("Retention job failed")
+        finally:
+            db.close()
+
+    _scheduler.add_job(
+        _retention,
+        "cron",
+        day_of_week="sun",
+        hour=3,
+        minute=0,
+        id="retention",
         replace_existing=True,
     )
     _scheduler.start()

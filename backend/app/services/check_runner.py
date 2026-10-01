@@ -38,7 +38,12 @@ async def _run_rule_check_async(db: Session, rule: MonitorRule) -> CheckRun:
         status_row.status = status
         status_row.last_check_at = run.finished_at
         status_row.next_run_at = next_run_from_schedule(rule.schedule)
-        status_row.last_values = result.metrics.values
+        last_values = dict(result.metrics.values)
+        if result.metrics.publish_count_in_window is not None:
+            last_values["publish_count_in_window"] = result.metrics.publish_count_in_window
+        if result.metrics.last_activity_at is not None:
+            last_values["last_activity_at"] = result.metrics.last_activity_at.isoformat()
+        status_row.last_values = last_values
         status_row.message = message
 
         notify_email = rule.params.get("notify_email")

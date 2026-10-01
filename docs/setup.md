@@ -29,6 +29,7 @@ cp .env.example .env
 | `SMTP_*` | Tidak | Notifikasi email |
 | `DEFAULT_NOTIFY_WEBHOOK_URL` | Tidak | Webhook default saat status berubah |
 | `META_APP_ID` / `META_APP_SECRET` | Tidak | Refresh token Instagram/Facebook (bisa juga di credentials per platform) |
+| `CHECK_RUN_RETENTION_DAYS` | Tidak | Hapus histori cek lebih lama dari N hari (default `90`; job Minggu 03:00 UTC) |
 
 Generate `MASTER_KEY`:
 
@@ -95,18 +96,20 @@ Output ke `backend/app/static/` (disajikan oleh FastAPI).
 | Role | Hak akses |
 |------|-----------|
 | **admin** | CRUD platform & aturan, jalankan cek, buat user, test adapter |
-| **viewer** | Dashboard & histori (read-only) |
+| **viewer** | Halaman **Monitoring** & **Analisa** (read-only), detail aturan + export CSV |
 
 1. Buka `/login`
 2. Email/password = nilai bootstrap (atau user yang dibuat admin)
-3. Admin dapat menambah user viewer di **User**
+3. Admin dapat menambah user viewer di **User** — viewer hanya melihat aturan **aktif**, dengan refresh otomatis ~60 detik di Monitoring
 
 ## 5. Alur konfigurasi pertama
 
 1. **Platform** — tambah sumber data (RSS, YouTube, Meta, …). Lihat [adapters.md](adapters.md).
 2. **Aturan** — tentukan metrik (`publish_frequency`, `last_activity`, …), jadwal cek, ambang OK/warning/critical.
 3. **Dashboard** — status per aturan; klik detail untuk histori.
-4. **Test koneksi** — di daftar platform (admin), tombol *Test koneksi*, atau aktifkan **mock** untuk uji tanpa API.
+4. **Test koneksi** — di daftar platform (admin), tombol *Test*, atau aktifkan **mock** untuk uji tanpa API.
+5. **Analisa** — menu *Analisa* (compliance run OK vs target).
+6. **Export CSV** — di detail aturan, unduh histori cek (viewer+).
 
 Mode **mock**: centang saat buat platform → tidak memanggil API eksternal.
 

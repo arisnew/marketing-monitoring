@@ -20,6 +20,12 @@ class UserCreate(BaseModel):
     role: UserRole = UserRole.viewer
 
 
+class UserUpdate(BaseModel):
+    role: UserRole | None = None
+    is_active: bool | None = None
+    password: str | None = None
+
+
 class UserOut(BaseModel):
     id: str
     email: EmailStr

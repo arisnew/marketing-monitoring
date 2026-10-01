@@ -1,7 +1,11 @@
 from __future__ import annotations
+
+import csv
+import io
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import RequireAdmin, RequireViewer
@@ -12,6 +16,7 @@ from app.models.platform import Platform
 from app.models.user import User
 from app.schemas.monitor import (
     CheckRunOut,
+    ComplianceRow,
     DashboardItem,
     MetricDailyOut,
     MonitorRuleCreate,
@@ -20,7 +25,9 @@ from app.schemas.monitor import (
     RuleStatusOut,
 )
 from app.services.aggregator import aggregate_yesterday
+from app.services.analytics import compliance_summary
 from app.services.check_runner import run_rule_check
+from app.services.rule_admin import delete_monitor_rule, duplicate_monitor_rule
 
 router = APIRouter(prefix="/monitors", tags=["monitors"])
 
@@ -121,3 +128,66 @@ def list_daily_metrics(rule_id: str, db: Session = Depends(get_db), _: User = Re
 def trigger_daily_aggregate(db: Session = Depends(get_db), _: User = RequireAdmin) -> Response:
     aggregate_yesterday(db)
     return Response(status_code=204)
+
+
+@router.get("/analytics/compliance", response_model=list[ComplianceRow])
+def analytics_compliance(
+    window_days: int = Query(default=7, ge=1, le=90),
+    db: Session = Depends(get_db),
+    _: User = RequireViewer,
+) -> list[ComplianceRow]:
+    return [ComplianceRow(**row) for row in compliance_summary(db, window_days)]
+
+
+@router.get("/rules/{rule_id}/runs/export")
+def export_runs_csv(
+    rule_id: str,
+    db: Session = Depends(get_db),
+    _: User = RequireViewer,
+) -> StreamingResponse:
+    rule = db.get(MonitorRule, rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    runs = (
+        db.query(CheckRun)
+        .filter(CheckRun.rule_id == rule_id)
+        .order_by(CheckRun.started_at.desc())
+        .limit(5000)
+        .all()
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["started_at", "finished_at", "status", "error_code", "evidence_summary"])
+    for run in runs:
+        writer.writerow(
+            [
+                run.started_at.isoformat() if run.started_at else "",
+                run.finished_at.isoformat() if run.finished_at else "",
+                run.status.value,
+                run.error_code or "",
+                str(run.evidence_summary),
+            ]
+        )
+    buffer.seek(0)
+    filename = f"check-runs-{rule_id[:8]}.csv"
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.delete("/rules/{rule_id}", status_code=204, response_class=Response)
+def delete_rule(rule_id: str, db: Session = Depends(get_db), _: User = RequireAdmin) -> Response:
+    if not delete_monitor_rule(db, rule_id):
+        raise HTTPException(status_code=404, detail="Rule not found")
+    return Response(status_code=204)
+
+
+@router.post("/rules/{rule_id}/duplicate", response_model=MonitorRuleOut, status_code=201)
+def duplicate_rule(rule_id: str, db: Session = Depends(get_db), _: User = RequireAdmin) -> MonitorRule:
+    copy = duplicate_monitor_rule(db, rule_id)
+    if not copy:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    return copy

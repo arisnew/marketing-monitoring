@@ -12,6 +12,7 @@ Cocok untuk tim kecil yang ingin satu layanan ringan di VPS/cloud (**~single con
 - **Scheduler** terintegrasi + agregat harian untuk trend sederhana
 - **UI web** + REST API (OpenAPI)
 - **Mock mode** untuk demo tanpa kredensial API
+- **Analisa compliance**, export **CSV**, duplikat/hapus aturan, retensi histori otomatis
 
 ## Stack singkat
 
@@ -67,6 +68,9 @@ z-private-docs/   Dokumen internal tim (gitignored, tidak di-push)
 | CRUD | `/api/v1/platforms`, `/api/v1/monitors/rules` | Admin |
 | `POST` | `/api/v1/platforms/{id}/test` | Admin |
 | `POST` | `/api/v1/monitors/rules/{id}/run` | Admin |
+| `GET` | `/api/v1/monitors/analytics/compliance` | Viewer+ |
+| `GET` | `/api/v1/monitors/rules/{id}/runs/export` | Viewer+ |
+| `GET` | `/api/v1/status` | Viewer+ |
 
 Spesifikasi lengkap: `/docs` (Swagger) saat server jalan.
 

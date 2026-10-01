@@ -32,14 +32,22 @@ async function runNow() {
   await load()
 }
 
+async function exportCsv() {
+  await api.downloadRunsCsv(props.id)
+}
+
 onMounted(load)
 </script>
 
 <template>
   <div>
-    <p><router-link to="/">← Dashboard</router-link></p>
+    <p><router-link to="/">← Monitoring</router-link></p>
     <h1 style="font-size: 1.25rem">Detail aturan</h1>
-    <button v-if="isAdmin" type="button" class="primary" @click="runNow">Jalankan cek sekarang</button>
+    <div v-if="isAdmin" style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+      <button type="button" class="primary" @click="runNow">Jalankan cek sekarang</button>
+      <button type="button" @click="exportCsv">Export CSV</button>
+    </div>
+    <button v-else type="button" @click="exportCsv">Export CSV</button>
 
     <p v-if="error" class="error">{{ error }}</p>
     <p v-else-if="loading" class="muted">Memuat…</p>

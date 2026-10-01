@@ -33,11 +33,14 @@ onMounted(loadMe)
       <div>
         <strong>Marketing Monitoring</strong>
         <nav>
-          <router-link to="/">Dashboard</router-link>
+          <router-link to="/">Monitoring</router-link>
+          <router-link to="/analytics">Analisa</router-link>
           <template v-if="user.role === 'admin'">
+            <span class="nav-divider">|</span>
             <router-link to="/admin/platforms">Platform</router-link>
             <router-link to="/admin/rules">Aturan</router-link>
             <router-link to="/admin/users">User</router-link>
+            <router-link to="/admin/guide">Petunjuk</router-link>
           </template>
         </nav>
       </div>
